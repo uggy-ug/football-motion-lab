@@ -9,12 +9,12 @@
 <body>
   <main class="app-shell">
     <header class="topbar">
-      <div><p class="eyebrow">FOOTBALL MOTION LAB · v0.1</p><h1>Single Step Over</h1></div>
-      <div class="status">Data-driven prototype</div>
+      <div><p class="eyebrow">FOOTBALL MOTION LAB · v0.2</p><h1 id="trick-title">Single Step Over</h1></div>
+      <label class="trick-picker">Exercise<select id="trick-select" aria-label="Choose exercise"></select></label>
     </header>
     <section class="workspace">
       <div class="viewer-card">
-        <canvas id="scene" aria-label="Interactive football trick viewer"></canvas>
+        <canvas id="scene" aria-label="Interactive football exercise viewer"></canvas>
         <div class="view-buttons" role="group" aria-label="Camera views">
           <button data-view="front">Front</button><button data-view="side">Side</button><button data-view="rear">Rear</button><button data-view="top">Top</button>
         </div>
@@ -28,8 +28,8 @@
     </section>
     <section class="controls-card">
       <div class="transport"><button id="play" class="primary">Play</button><button id="restart">Restart</button><label>Speed<select id="speed"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option></select></label></div>
-      <input id="timeline" type="range" min="0" max="1.6" step="0.001" value="0" />
-      <div class="timeline-meta"><span id="time">0.00s</span><span>1.60s</span></div>
+      <input id="timeline" type="range" min="0" max="2.4" step="0.001" value="0" />
+      <div class="timeline-meta"><span id="time">0.00s</span><span id="duration">2.40s</span></div>
     </section>
     <section class="phases" id="phases"></section>
   </main>
