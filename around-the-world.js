@@ -1,66 +1,14 @@
-import { clamp, createMotionSampler, pulse } from './keyframes.js';
-
+const clamp=(v,a=0,b=1)=>Math.min(b,Math.max(a,v));
+const smooth=v=>v*v*(3-2*v);
+const smoother=v=>v*v*v*(v*(v*6-15)+10);
 const mix=(a,b,t)=>a+(b-a)*t;
-const controls=createMotionSampler({
-  crouch:[{time:0,value:.01},{time:.48,value:.09},{time:.76,value:.16,curve:'easeIn'},{time:1.02,value:.05,curve:'snap'},{time:2.3,value:.03},{time:2.76,value:.13},{time:3.2,value:.01}],
-  lateral:[{time:0,value:0},{time:.55,value:-.035},{time:.92,value:-.13},{time:1.5,value:-.17},{time:2.15,value:-.11},{time:2.65,value:-.03},{time:3.2,value:0}],
-  forward:[{time:0,value:0},{time:.72,value:.025},{time:1.2,value:.07},{time:2.2,value:.035},{time:3.2,value:0}],
-  pelvisYaw:[{time:0,value:0},{time:.78,value:-.08},{time:1.35,value:.18},{time:1.82,value:.27},{time:2.25,value:.08},{time:3.2,value:0}],
-  chestYaw:[{time:0,value:0},{time:.9,value:.06},{time:1.5,value:-.17},{time:2.0,value:-.23},{time:2.55,value:-.04},{time:3.2,value:0}],
-  orbit:[{time:0,value:0},{time:1.02,value:0},{time:2.18,value:1,curve:'linear'},{time:3.2,value:1}],
-  kneeLead:[{time:0,value:0},{time:.72,value:.12},{time:1.12,value:.34},{time:1.6,value:.48},{time:2.18,value:.16},{time:2.65,value:0}],
-  footLift:[{time:0,value:0},{time:.7,value:.12},{time:1.05,value:.46},{time:1.55,value:.67},{time:2.18,value:.39},{time:2.62,value:.04},{time:3.2,value:0}],
-  armOpen:[{time:0,value:.03},{time:.8,value:.08},{time:1.5,value:.31},{time:2.0,value:.38},{time:2.6,value:.11},{time:3.2,value:.03}],
-  gazeDown:[{time:0,value:.06},{time:.75,value:.15},{time:1.65,value:.23},{time:2.55,value:.14},{time:3.2,value:.06}]
-});
-
-export const aroundTheWorld={
-  id:'around-the-world',title:'Around the World',duration:3.2,
-  phases:[
-    {id:'settle',from:0,to:.55,title:'Set the rhythm',copy:'Load the ankle and knee before the lift. Keep the chest quiet over the support foot.'},
-    {id:'pop',from:.55,to:1.02,title:'Pop the ball',copy:'The foot lifts the ball while the support leg extends and the pelvis begins to rotate.'},
-    {id:'circle',from:1.02,to:2.18,title:'Circle the ball',copy:'Lead with the knee. The foot follows a wide continuous orbit while chest and pelvis counter-rotate.'},
-    {id:'catch',from:2.18,to:2.65,title:'Re-centre',copy:'Retract the working leg under the hips before the ball descends.'},
-    {id:'recover',from:2.65,to:3.2,title:'Recover the rhythm',copy:'Absorb the next contact through ankle, knee and hip without losing posture.'}
-  ],
-  sample(t){
-    const c=controls(t),theta=c.orbit*Math.PI*2;
-    const rebound=.012*Math.sin(t*10)*(1-clamp((t-1.02)/1.2));
-    const rootX=c.lateral+.025*Math.sin(t*2.8),rootZ=c.forward+.012*Math.sin(t*4.2);
-    const pelvisY=1.59-c.crouch+rebound;
-    const pelvis=[rootX,pelvisY,rootZ];
-    const chest=[rootX-.42*c.chestYaw,2.13-.54*c.crouch,rootZ+.055+.035*Math.sin(theta)*c.orbit];
-    const head=[chest[0]+.035*Math.sin(theta)*c.orbit,chest[1]+.62,chest[2]-.18*c.gazeDown];
-
-    const hs=.19;
-    const leftHip=[pelvis[0]-hs*Math.cos(c.pelvisYaw),pelvis[1]-.02,pelvis[2]+hs*Math.sin(c.pelvisYaw)];
-    const rightHip=[pelvis[0]+hs*Math.cos(c.pelvisYaw),pelvis[1]-.02,pelvis[2]-hs*Math.sin(c.pelvisYaw)];
-
-    const leftAnkle=[-.18+.18*rootX,.15-.025*c.crouch,.025+.08*rootZ];
-    const leftKnee=[mix(leftHip[0],leftAnkle[0],.5)-.08-.12*c.crouch,.92-.34*c.crouch,mix(leftHip[2],leftAnkle[2],.5)+.13+.04*c.forward];
-    const leftToe=[leftAnkle[0]+.01,leftAnkle[1]-.075,leftAnkle[2]+.36];
-
-    const radius=.33+.08*Math.sin(Math.PI*c.orbit);
-    const orbitX=.13+radius*Math.sin(theta),orbitZ=.10-radius*Math.cos(theta);
-    const rightAnkle=[mix(.18,orbitX,c.orbit)+.04*c.kneeLead,.16+c.footLift+.12*Math.sin(theta*.5)*c.orbit, mix(.07,orbitZ,c.orbit)];
-    const rightKnee=[mix(rightHip[0],rightAnkle[0],.48)+.22*c.kneeLead,.96+.55*c.kneeLead,mix(rightHip[2],rightAnkle[2],.48)+.16*c.kneeLead+.09*Math.cos(theta)*c.orbit];
-    const toePitch=.07+.11*Math.sin(theta+.6)*c.orbit;
-    const rightToe=[rightAnkle[0]+.08*Math.sin(theta)*c.orbit,rightAnkle[1]-.055+toePitch,rightAnkle[2]+.34-.06*Math.cos(theta)*c.orbit];
-
-    const sy=c.chestYaw;
-    const leftShoulder=[chest[0]-.38*Math.cos(sy),chest[1]+.14,chest[2]+.38*Math.sin(sy)];
-    const rightShoulder=[chest[0]+.38*Math.cos(sy),chest[1]+.14,chest[2]-.38*Math.sin(sy)];
-    const leftElbow=[leftShoulder[0]-.18,leftShoulder[1]-.27,leftShoulder[2]+.15+c.armOpen];
-    const rightElbow=[rightShoulder[0]+.18,rightShoulder[1]-.27,rightShoulder[2]-.15-c.armOpen];
-    const leftHand=[leftElbow[0]-.04,leftElbow[1]-.33,leftElbow[2]+.08];
-    const rightHand=[rightElbow[0]+.04,rightElbow[1]-.33,rightElbow[2]-.08];
-
-    const launch=clamp((t-.68)/.18),flight=clamp((t-.84)/1.62),drop=clamp((t-2.46)/.30);
-    const ballY=t<.84?.22+.43*(1-Math.pow(1-launch,3)):t<2.46?.64+1.05*4*flight*(1-flight):.64-.4*drop*drop;
-    const ball=[.03+.04*Math.sin(flight*Math.PI),ballY,.08+.022*Math.sin(flight*Math.PI*2)];
-    const contact=Math.max(pulse(t,.72,.085),pulse(t,2.78,.09));
-    const com=[pelvis[0]-.08-.06*c.kneeLead,pelvis[1]+.34,pelvis[2]+.01];
-    const leftWeight=clamp(68+24*c.kneeLead+18*c.crouch-20*clamp((t-2.18)/.48),10,95);
-    return {pelvis,chest,head,leftHip,leftKnee,leftAnkle,leftToe,rightHip,rightKnee,rightAnkle,rightToe,leftShoulder,leftElbow,leftHand,rightShoulder,rightElbow,rightHand,ball,com,contact,activeLeg:'right',weights:{left:leftWeight,right:100-leftWeight},root:[0,0,0]};
-  }
-};
+const pulse=(t,c,w)=>clamp(1-Math.abs(t-c)/w);
+const add=(a,b)=>a.map((v,i)=>v+b[i]);
+const sub=(a,b)=>a.map((v,i)=>v-b[i]);
+const mul=(a,s)=>a.map(v=>v*s);
+const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+const len=a=>Math.hypot(...a);
+const norm=a=>{const l=len(a)||1;return mul(a,1/l)};
+function twoBoneIK(hip,target,pole,upper=.78,lower=.78){const v=sub(target,hip),d=clamp(len(v),Math.abs(upper-lower)+.001,upper+lower-.001),dir=norm(v);let plane=norm(sub(pole,mul(dir,dot(pole,dir))));if(len(plane)<.01)plane=norm(cross(dir,[0,0,1]));const along=(upper*upper-lower*lower+d*d)/(2*d),height=Math.sqrt(Math.max(0,upper*upper-along*along));return add(hip,add(mul(dir,along),mul(plane,height)))}
+export const aroundTheWorld={id:'around-the-world',title:'Around the World · IK',duration:3.4,phases:[{id:'set',from:0,to:.62,title:'Set the rhythm',copy:'Keep the support foot planted. Compress through the ankle and knee before the lift.'},{id:'pop',from:.62,to:1.04,title:'Pop the ball',copy:'Lift with the laces while the body stays stacked over the planted support foot.'},{id:'circle',from:1.04,to:2.34,title:'Circle the ball',copy:'The foot follows a clear orbit; the knee and hip are solved from fixed limb lengths.'},{id:'return',from:2.34,to:2.86,title:'Return under the body',copy:'Bring the working foot back beneath the hip before the ball descends.'},{id:'absorb',from:2.86,to:3.4,title:'Absorb and reset',copy:'Receive the next touch with a soft knee and regain a balanced juggling stance.'}],sample(t){const set=smoother(clamp(t/.62)),pop=smoother(clamp((t-.62)/.42)),circle=smoother(clamp((t-1.04)/1.30)),ret=smoother(clamp((t-2.34)/.52)),absorb=smoother(clamp((t-2.86)/.54));const compression=.10*pulse(t,.72,.28)+.08*pulse(t,3.08,.24),pelvisX=-.08-.055*pop+.025*Math.sin(circle*Math.PI)-.015*ret,pelvisZ=.025+.018*Math.sin(t*2.4)-.018*circle+.012*ret,pelvisY=1.58-compression+.018*Math.sin(t*4.2),pelvisYaw=.05*pop+.10*Math.sin(circle*Math.PI)-.05*ret,pelvis=[pelvisX,pelvisY,pelvisZ];const hs=.19,leftHip=[pelvisX-hs*Math.cos(pelvisYaw),pelvisY-.02,pelvisZ+hs*Math.sin(pelvisYaw)],rightHip=[pelvisX+hs*Math.cos(pelvisYaw),pelvisY-.02,pelvisZ-hs*Math.sin(pelvisYaw)];const leftAnkle=[-.25,.16,.03],leftToe=[-.245,.085,.39],leftKnee=twoBoneIK(leftHip,leftAnkle,[-.55,.10,.42],.79,.78);const theta=circle*Math.PI*2,orbitR=.43,centre=[.055,.88,.08],ready=[.18,.18,.09],popTarget=[.16,.47,.10],orbitTarget=[centre[0]+orbitR*Math.sin(theta),centre[1]+.12*Math.sin(theta*.5)+.05*Math.sin(circle*Math.PI),centre[2]-orbitR*Math.cos(theta)],returnTarget=[.20,.20,.11];let rightAnkle;if(t<.62)rightAnkle=[mix(ready[0],.17,set),mix(ready[1],.17,set),mix(ready[2],.09,set)];else if(t<1.04)rightAnkle=ready.map((v,i)=>mix(v,popTarget[i],pop));else if(t<2.34)rightAnkle=orbitTarget;else if(t<2.86)rightAnkle=orbitTarget.map((v,i)=>mix(v,returnTarget[i],ret));else rightAnkle=returnTarget.map((v,i)=>mix(v,ready[i],absorb));const rightKnee=twoBoneIK(rightHip,rightAnkle,[.48,.20,.52],.79,.78),tangent=norm([Math.cos(theta),.08*Math.cos(theta*.5),Math.sin(theta)]),toeForward=t<1.04?[0,-.04,.36]:norm(add(mul(tangent,.20),[0,-.04,.34])),rightToe=add(rightAnkle,toeForward);const chestYaw=-pelvisYaw*.55,chest=[pelvisX-.02*pop+.015*ret,2.11-compression*.45,pelvisZ+.055],head=[chest[0]-.015*circle,chest[1]+.62,chest[2]-.025*pop],leftShoulder=[chest[0]-.38*Math.cos(chestYaw),chest[1]+.14,chest[2]+.38*Math.sin(chestYaw)],rightShoulder=[chest[0]+.38*Math.cos(chestYaw),chest[1]+.14,chest[2]-.38*Math.sin(chestYaw)],arm=.10*Math.sin(circle*Math.PI),leftElbow=[leftShoulder[0]-.16,leftShoulder[1]-.31,leftShoulder[2]+.13+arm],rightElbow=[rightShoulder[0]+.16,rightShoulder[1]-.30,rightShoulder[2]-.13-arm],leftHand=[leftElbow[0]-.04,leftElbow[1]-.34,leftElbow[2]+.05],rightHand=[rightElbow[0]+.04,rightElbow[1]-.34,rightElbow[2]-.05];const launch=clamp((t-.72)/.18),flight=clamp((t-.86)/1.92),drop=clamp((t-2.78)/.30),ballY=t<.86?(.22+.38*smooth(launch)):(t<2.78?(0.60+1.15*4*flight*(1-flight)):(.60-.37*smooth(drop))),ball=[.055,ballY,.08],contact=Math.max(pulse(t,.74,.08),pulse(t,3.04,.09)),com=[pelvisX-.07-.035*pop+.025*Math.sin(circle*Math.PI),pelvisY+.34,pelvisZ],leftWeight=clamp(72+15*pop+6*Math.sin(circle*Math.PI)-18*ret,48,94);return{pelvis,chest,head,leftHip,leftKnee,leftAnkle,leftToe,rightHip,rightKnee,rightAnkle,rightToe,leftShoulder,leftElbow,leftHand,rightShoulder,rightElbow,rightHand,ball,com,contact,activeLeg:'right',weights:{left:leftWeight,right:100-leftWeight},root:[0,0,0]}}};
