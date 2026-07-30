@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Football Motion Lab</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div><p class="eyebrow">FOOTBALL MOTION LAB · v0.1</p><h1>Single Step Over</h1></div>
+      <div class="status">Data-driven prototype</div>
+    </header>
+    <section class="workspace">
+      <div class="viewer-card">
+        <canvas id="scene" aria-label="Interactive football trick viewer"></canvas>
+        <div class="view-buttons" role="group" aria-label="Camera views">
+          <button data-view="front">Front</button><button data-view="side">Side</button><button data-view="rear">Rear</button><button data-view="top">Top</button>
+        </div>
+      </div>
+      <aside class="panel">
+        <p class="phase-label">CURRENT PHASE</p><h2 id="phase-title">Approach</h2>
+        <p id="phase-copy">Approach the ball under control and prepare the supporting leg.</p>
+        <div class="metric-grid"><div><span>Left foot</span><strong id="left-weight">55%</strong></div><div><span>Right foot</span><strong id="right-weight">45%</strong></div></div>
+        <div class="legend"><div><i class="dot player"></i> Body skeleton</div><div><i class="dot active"></i> Active leg</div><div><i class="dot ball"></i> Ball trajectory</div></div>
+      </aside>
+    </section>
+    <section class="controls-card">
+      <div class="transport"><button id="play" class="primary">Play</button><button id="restart">Restart</button><label>Speed<select id="speed"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option></select></label></div>
+      <input id="timeline" type="range" min="0" max="1.6" step="0.001" value="0" />
+      <div class="timeline-meta"><span id="time">0.00s</span><span>1.60s</span></div>
+    </section>
+    <section class="phases" id="phases"></section>
+  </main>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
