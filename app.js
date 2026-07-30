@@ -1,5 +1,5 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.179.1/build/three.module.js';
-import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.179.1/examples/jsm/controls/OrbitControls.js';
+import * as THREE from 'https://esm.sh/three@0.179.1';
+import { OrbitControls } from 'https://esm.sh/three@0.179.1/examples/jsm/controls/OrbitControls.js';
 import { trick } from './trick.js';
 
 const canvas=document.querySelector('#scene');
@@ -11,7 +11,14 @@ const scene=new THREE.Scene();
 scene.fog=new THREE.Fog(0x07111f,8,18);
 const camera=new THREE.PerspectiveCamera(42,1,.1,100);
 camera.position.set(5.5,3.4,7.2);
-const controls=new OrbitControls(camera,canvas);controls.enableDamping=true;controls.target.set(0,1.25,0);
+const controls=new OrbitControls(camera,canvas);
+controls.enableDamping=true;
+controls.enablePan=false;
+controls.minDistance=3.5;
+controls.maxDistance=12;
+controls.target.set(0,1.25,0);
+controls.touches.ONE=THREE.TOUCH.ROTATE;
+controls.touches.TWO=THREE.TOUCH.DOLLY_PAN;
 scene.add(new THREE.HemisphereLight(0xbdd8ff,0x112014,2.1));
 const sun=new THREE.DirectionalLight(0xffffff,3.2);sun.position.set(4,8,5);sun.castShadow=true;scene.add(sun);
 const ground=new THREE.Mesh(new THREE.CircleGeometry(7,64),new THREE.MeshStandardMaterial({color:0x173c32,roughness:.95}));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
@@ -43,9 +50,9 @@ function apply(t){const s=trick.sample(t);player.position.set(...s.root);torso.r
 function resize(){const r=canvas.getBoundingClientRect();renderer.setSize(r.width,r.height,false);camera.aspect=r.width/r.height;camera.updateProjectionMatrix()}
 new ResizeObserver(resize).observe(canvas);resize();
 function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;if(playing){time+=dt*speed;if(time>trick.duration){time=0}}apply(time);controls.update();renderer.render(scene,camera);requestAnimationFrame(frame)}requestAnimationFrame(frame);
-play.onclick=()=>{playing=!playing;play.textContent=playing?'Pause':'Play'};
-document.querySelector('#restart').onclick=()=>{time=0;playing=false;play.textContent='Play'};
-document.querySelector('#speed').onchange=e=>speed=Number(e.target.value);
-timeline.oninput=e=>{time=Number(e.target.value);playing=false;play.textContent='Play'};
+play.addEventListener('click',()=>{playing=!playing;play.textContent=playing?'Pause':'Play'});
+document.querySelector('#restart').addEventListener('click',()=>{time=0;playing=false;play.textContent='Play'});
+document.querySelector('#speed').addEventListener('change',e=>speed=Number(e.target.value));
+timeline.addEventListener('input',e=>{time=Number(e.target.value);playing=false;play.textContent='Play'});
 const views={front:[0,2.8,7],side:[7,2.8,0],rear:[0,2.8,-7],top:[0,8,.01]};
-document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{camera.position.set(...views[b.dataset.view]);controls.target.set(.25,1.25,.2);controls.update()});
+document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>{camera.position.set(...views[b.dataset.view]);controls.target.set(.25,1.25,.2);controls.update()}));
