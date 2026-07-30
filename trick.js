@@ -1,14 +1,55 @@
-export const trick = {
-  id: 'single-step-over', title: 'Single Step Over', duration: 1.6,
-  phases: [
-    { id:'approach', from:0, to:0.35, title:'Approach', copy:'Approach the ball under control and prepare the supporting leg.' },
-    { id:'deception', from:0.35, to:0.9, title:'Deception', copy:'Move the right foot around the ball while shoulders and hips suggest a change of direction.' },
-    { id:'touch', from:0.9, to:1.1, title:'Outside touch', copy:'Use the outside of the left foot to move the ball away from the defender.' },
-    { id:'exit', from:1.1, to:1.6, title:'Acceleration', copy:'Shift the centre of mass and accelerate after the ball.' }
+const clamp=(v,a=0,b=1)=>Math.min(b,Math.max(a,v));
+const smooth=v=>{v=clamp(v);return v*v*(3-2*v)};
+const mix=(a,b,t)=>a+(b-a)*t;
+
+export const trick={
+  id:'single-step-over',title:'Single Step Over',duration:1.8,
+  phases:[
+    {id:'approach',from:0,to:.42,title:'Approach',copy:'Arrive balanced, shorten the final step and keep the ball close.'},
+    {id:'deception',from:.42,to:1.02,title:'Step over',copy:'Shift onto the left leg while the right foot circles around the front of the ball.'},
+    {id:'touch',from:1.02,to:1.28,title:'Outside touch',copy:'Use the outside of the left foot to push the ball diagonally away.'},
+    {id:'exit',from:1.28,to:1.8,title:'Acceleration',copy:'Drive the body after the ball and recover into the first running step.'}
   ],
-  sample(t) {
-    const clamp=(v,a=0,b=1)=>Math.min(b,Math.max(a,v)); const smooth=v=>v*v*(3-2*v);
-    const approach=smooth(clamp(t/0.35)); const deception=smooth(clamp((t-0.35)/0.55)); const touch=smooth(clamp((t-0.9)/0.2)); const exit=smooth(clamp((t-1.1)/0.5)); const circle=Math.sin(deception*Math.PI);
-    return {root:[exit*0.7,0,approach*0.25+exit*0.65],torso:{leanX:-0.08*circle,leanZ:0.14*circle-0.08*exit,yaw:0.28*circle-0.18*exit},leftLeg:{hip:-0.12+0.24*touch,knee:0.16+0.34*touch,ankle:-0.12*touch},rightLeg:{hip:0.1-0.65*circle,knee:0.12+1.05*circle,ankle:0.3*circle},rightFootOrbit:{x:0.46*Math.sin(deception*Math.PI*1.15),z:0.36*(1-Math.cos(deception*Math.PI*1.15)),y:0.11*circle},ball:[0.05+touch*0.33+exit*0.72,0.22,0.05+touch*0.2+exit*0.48],weights:{left:Math.round(55+33*circle-15*exit),right:0}};
+  sample(t){
+    const approach=smooth(t/.42);
+    const step=smooth((t-.42)/.60);
+    const touch=smooth((t-1.02)/.26);
+    const exit=smooth((t-1.28)/.52);
+    const lift=Math.sin(step*Math.PI);
+    const bodyX=.10*step-.18*touch-.22*exit;
+    const bodyZ=.12*approach+.10*step+.28*touch+.72*exit;
+    const dip=.08*Math.sin(step*Math.PI)+.05*Math.sin(touch*Math.PI);
+    const pelvis=[bodyX,1.48-dip,bodyZ];
+    const chest=[bodyX+.07*step-.05*exit,2.10-dip,bodyZ+.03];
+    const head=[chest[0],2.72-dip,chest[2]+.015];
+    const shoulderY=2.34-dip;
+    const shoulderTurn=.10*step-.14*exit;
+    const leftShoulder=[bodyX-.34,shoulderY,bodyZ+shoulderTurn];
+    const rightShoulder=[bodyX+.34,shoulderY,bodyZ-shoulderTurn];
+    const leftElbow=[bodyX-.48,1.98-dip,bodyZ-.10*step];
+    const rightElbow=[bodyX+.46,1.98-dip,bodyZ+.16*step];
+    const leftHand=[bodyX-.40,1.64-dip,bodyZ-.15*step];
+    const rightHand=[bodyX+.36,1.64-dip,bodyZ+.24*step];
+
+    const leftHip=[pelvis[0]-.18,pelvis[1]-.03,pelvis[2]];
+    const rightHip=[pelvis[0]+.18,pelvis[1]-.03,pelvis[2]];
+
+    const leftAnkle=[-.22-.12*touch-.28*exit,.12,.03+.14*touch+.60*exit];
+    const leftToe=[leftAnkle[0]-.03,.08,leftAnkle[2]+.34];
+    const leftKnee=[mix(leftHip[0],leftAnkle[0],.52)-.05, .80-.05*step+.08*touch, mix(leftHip[2],leftAnkle[2],.48)+.08];
+
+    const arc=Math.sin(step*Math.PI);
+    const rightAnkle=[
+      .22+.48*arc-.10*step+.12*exit,
+      .12+.25*lift,
+      .02+.52*step-.10*arc+.44*exit
+    ];
+    const rightToe=[rightAnkle[0]-.04*step,.08+(.18*lift),rightAnkle[2]+.34];
+    const rightKnee=[mix(rightHip[0],rightAnkle[0],.53)+.10*arc,.82+.12*lift,mix(rightHip[2],rightAnkle[2],.48)-.02];
+
+    const ball=[-.04-.42*touch-.70*exit,.22,.28+.28*touch+.70*exit];
+    const leftWeight=Math.round(55+35*lift-22*touch-18*exit);
+
+    return {joints:{pelvis,chest,head,leftShoulder,rightShoulder,leftElbow,rightElbow,leftHand,rightHand,leftHip,rightHip,leftKnee,rightKnee,leftAnkle,rightAnkle,leftToe,rightToe},ball,weights:{left:clamp(leftWeight,8,92)},active:touch>.15?'left':'right'};
   }
 };
